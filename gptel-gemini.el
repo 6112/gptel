@@ -87,7 +87,14 @@ list."
      (when (or tool-use include-text)
        (let* ((data (plist-get info :data))
               (prompts (plist-get data :contents))
+              (thought (plist-get part :thought))
+              (reasoning-block (plist-get info :reasoning-block))
               (last-prompt (aref prompts (1- (length prompts)))))
+         (if thought
+             (unless reasoning-block (plist-put info :reasoning-block 'in))
+           (if (eq reasoning-block 'in)
+               (plist-put
+                info :reasoning-block (if (eq reasoning-block 'in) t 'done))))
          (if (equal (plist-get last-prompt :role) "model")
              ;; When streaming, the last prompt may already have the role
              ;; "model" from prior calls to this function.  Append to its parts
@@ -134,6 +141,9 @@ list."
       (setq params
             (plist-put params
                        :maxOutputTokens gptel-max-tokens)))
+    (when gptel-include-reasoning
+      (setq params
+            (plist-put params :thinkingConfig '(:includeThoughts t))))
     (when params
       (plist-put prompts-plist
                  :generationConfig params))
